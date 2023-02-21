@@ -1,0 +1,56 @@
+outputFolder = fullfile('lung_colon_image_set/');
+rootFolder = fullfile(outputFolder, 'colon_image_set');
+fileFolder = fullfile(rootFolder, 'colon_aca');
+
+outputFolder2 = fullfile('lung_colon_image_set_histeq');
+rootFolder2 = fullfile(outputFolder2, 'colon_image_set');
+fileFolder2 = fullfile(rootFolder2, 'colon_aca');
+
+S1 = dir(fullfile(rootFolder,'colon_aca', '*.jpeg'));
+fprintf('Found %d JPEG files.\n', length(S1));
+
+
+for k = 1 : numel(S1)
+	originalFilename = fullfile(fileFolder, S1(k).name);
+	[~, baseFileNameNoExt, ~] = fileparts(lower(originalFilename));
+	originalImage = imread(originalFilename);
+	fprintf('\nRead in %s.\n', originalFilename);
+	
+    filename = fullfile(fileFolder, S1(k).name);
+    
+    rgbImg = imread(filename);
+     rgbImghsv = rgb2hsv(rgbImg);
+
+    % Split the HSV channels
+    [H,S,V]= imsplit(rgbImghsv);
+
+    % Rescale the S channel
+    Snew = imadjust(S,[0 1],[20 255]/255);
+    
+    % Adjust the H channel
+    Hnew = imadjust(H,[0 1],[30 255]/255);
+
+    % Enhance the V channel using histogram equalization
+    v1 = rgbImghsv(:,:,3);
+    v1 = histeq(v1);
+    v1_adapthisteq = adapthisteq(v1);
+    rgbImghsv(:,:,3) = v1;
+
+
+    % Merge the modified H, S, and V channels back to an HSV image
+    HSimg = hsv2rgb(cat(3,Hnew,Snew,V));
+    
+
+    [~,name,~] = fileparts(filename);
+    gsFilename = sprintf('%s_HISTEQ.png', name);
+    fullFileName = fullfile(fileFolder2, gsFilename);
+    imwrite(HSimg, fullFileName);
+    fprintf('    Wrote out %s.\n', fullFileName);
+
+   % fprintf('Now processing %s...\n', imds.S{k});
+    %thisFileName = imds.S{k};  % Note: this includes the folder prepended.
+    
+
+    
+	
+end
